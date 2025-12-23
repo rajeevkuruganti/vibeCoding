@@ -23,3 +23,4 @@ yarn dev
 ```
 
 The dashboard expects a GET `${VITE_API_URL}/records` endpoint that returns an array of objects. Each record should include at least: `id`, `name`, `email`, `status`, `createdAt`.
+Author: Rajeev Kuruganti rkuruganti@4circlesllc.com 
