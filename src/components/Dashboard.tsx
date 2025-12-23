@@ -12,11 +12,16 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
-  ,Snackbar, Alert
+  TextField,
+  Snackbar,
+  Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 
 export default function Dashboard() {
   const [rows, setRows] = useState<RecordItem[]>([])
@@ -78,21 +83,6 @@ export default function Dashboard() {
 
   const displayed = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
-  const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Name', flex: 1 },
-    { field: 'itemcontents', headerName: 'Item Contents', width: 200 },
-    { field: 'status', headerName: 'Status', width: 120 },
-    {
-      field: 'createdAt',
-      headerName: 'Created',
-      width: 200,
-      valueFormatter: (params) => {
-        return params.value ? new Date(params.value as string).toLocaleString() : ''
-      }
-    }
-  ]
-
   return (
     <Box p={2} sx={{ backgroundColor: 'darkgreen' }}>
       <Paper elevation={2} sx={{ backgroundColor: 'white' }}>
@@ -117,32 +107,88 @@ export default function Dashboard() {
             <Typography color="error">{error}</Typography>
           </Box>
         ) : (
-          <Box sx={{ height: 520, width: '100%', p: 2, boxSizing: 'border-box' }}>
-            <Box sx={{ height: '100%', width: '100%', border: '2px solid black', borderRadius: 1, overflow: 'hidden' }}>
-              <DataGrid
-                rows={rows}
-                columns={columns}
-                pageSize={rowsPerPage}
-                rowsPerPageOptions={[5, 10, 25]}
-                onPageSizeChange={(newSize) => setRowsPerPage(newSize)}
-                pagination
-                sx={{
-                  height: '100%',
-                  '& .MuiDataGrid-row:nth-of-type(odd)': {
-                    backgroundColor: (theme) => theme.palette.action.hover
-                  },
-                  '& .MuiDataGrid-row:nth-of-type(even)': {
-                    backgroundColor: 'transparent'
-                  },
-                  '& .MuiDataGrid-main': {
-                    backgroundColor: 'transparent'
-                  },
-                  '& .MuiDataGrid-columnHeaders': {
-                    borderBottom: '1px solid black'
-                  }
-                }}
-              />
-            </Box>
+          <Box sx={{ p: 2 }}>
+            {displayed.map((record) => (
+              <Accordion key={record.id} sx={{ mb: 1, '&:before': { display: 'none' } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 600 }}>{record.id}</Typography>
+                    <Typography variant="body1" sx={{ flex: 1 }}>
+                      {record.name}
+                    </Typography>
+                    {record.status && (
+                      <Chip label={record.status} size="small" variant="outlined" />
+                    )}
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box sx={{ display: 'grid', gap: 1 }}>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary">
+                        Item Contents
+                      </Typography>
+                      <Typography variant="body2">{record.itemcontents || 'N/A'}</Typography>
+                    </Box>
+                    {record.year_released && (
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Year Released
+                        </Typography>
+                        <Typography variant="body2">{record.year_released}</Typography>
+                      </Box>
+                    )}
+                    {record.createdAt && (
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Created
+                        </Typography>
+                        <Typography variant="body2">
+                          {new Date(record.createdAt as string).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
+                    {record.description && (
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Description
+                        </Typography>
+                        <Typography variant="body2">{record.description}</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+            
+            {displayed.length === 0 && (
+              <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
+                No records found
+              </Typography>
+            )}
+
+            {rows.length > rowsPerPage && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
+                <Button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  variant="outlined"
+                  size="small"
+                >
+                  Previous
+                </Button>
+                <Typography sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
+                  Page {page + 1} of {Math.ceil(rows.length / rowsPerPage)}
+                </Typography>
+                <Button
+                  onClick={() => setPage((p) => Math.min(Math.ceil(rows.length / rowsPerPage) - 1, p + 1))}
+                  disabled={page >= Math.ceil(rows.length / rowsPerPage) - 1}
+                  variant="outlined"
+                  size="small"
+                >
+                  Next
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
 
