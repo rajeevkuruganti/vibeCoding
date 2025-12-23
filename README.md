@@ -1,3 +1,8 @@
+# Learning Project: 
+VS Code and AI agent GPT-5: 
+This code is for collection-ui using React TS with MUI and react hooks to connect to the Spring Boot API. 
+The spring Boot API is in Kotlin.
+
 # Vibe Dashboard
 
 Minimal React + TypeScript + Vite app using MUI that fetches records from an external API and displays them in a table.
