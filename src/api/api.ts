@@ -16,3 +16,8 @@ export async function createRecord(payload: Partial<RecordItem>): Promise<Record
   const res = await axios.post(url, payload)
   return res.data as RecordItem
 }
+export async function deleteRecord(payload: Partial<RecordItem>): Promise<RecordItem> {
+  const url = `${BASE}/collection/cs` + payload._id
+  const res = await axios.delete(url)
+  return res.data as RecordItem
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { fetchAllRecords, createRecord } from '../api/api'
 import { RecordItem } from '../types'
 import {
@@ -8,40 +8,45 @@ import {
   Toolbar,
   Typography,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Snackbar,
-  Alert,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  Chip
+  Alert
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { Description, InsertEmoticon } from '@mui/icons-material'
+import RecordGrid from './RecordGrid'
+import NewRecordDialog from './NewRecordDialog'
+
+const IMAGES_URL = 'http://localhost:8080/collection/images'
 
 export default function Dashboard() {
+  // Data state
   const [rows, setRows] = useState<RecordItem[]>([])
+  const [images, setImages] = useState<string[]>([])
+  const [slideIndices, setSlideIndices] = useState<{ [key: number]: number }>({})
+
+  // UI state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(6)
+  const [rowsPerPage] = useState(6)
+
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [newRecord, setNewRecord] = useState({ name: '', itemcontents: '', year_released: '' })
+  const [newRecord, setNewRecord] = useState({ name: '', itemcontents: '', year_released: '', description: '' })
+
+  // Notification state
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorOpen, setErrorOpen] = useState(false)
 
+  // Load records and images on mount
   useEffect(() => {
     load()
+    loadImages()
   }, [])
 
-  async function load() {
+  // Load all records
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -53,16 +58,28 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function handleCreate() {
+  // Load images from server
+  const loadImages = useCallback(async () => {
+    try {
+      const response = await fetch(IMAGES_URL)
+      const data = await response.json()
+      setImages(data || [])
+    } catch (err: any) {
+      console.error('Failed to fetch images:', err)
+    }
+  }, [])
+
+  // Create new record
+  const handleCreate = useCallback(async () => {
     setSubmitting(true)
     try {
       const created = await createRecord(newRecord)
       setRows((prev) => [created, ...prev])
       setPage(0)
       setDialogOpen(false)
-      setNewRecord({ name: '', itemcontents: '', description: '' , year_released: '' })
+      setNewRecord({ name: '', itemcontents: '', year_released: '', description: '' })
       setSuccessMessage(`Created record ${created.id}`)
       setSuccessOpen(true)
     } catch (err: any) {
@@ -71,22 +88,62 @@ export default function Dashboard() {
     } finally {
       setSubmitting(false)
     }
-  }
+  }, [newRecord])
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage)
-  }
+  // Handle slide navigation
+  const nextSlide = useCallback((recordId: number) => {
+    setSlideIndices((prev) => ({
+      ...prev,
+      [recordId]: ((prev[recordId] || 0) + 1) % images.length
+    }))
+  }, [images.length])
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+  const prevSlide = useCallback((recordId: number) => {
+    setSlideIndices((prev) => ({
+      ...prev,
+      [recordId]: ((prev[recordId] || 0) - 1 + images.length) % images.length
+    }))
+  }, [images.length])
 
-  const displayed = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  // Delete record
+  const handleDelete = useCallback(async (recordId: number) => {
+    try {
+      const response = await fetch(`https://localhost:8080/collection/cs`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: recordId })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete record')
+      }
+
+      setRows((prev) => prev.filter((r) => r.id !== recordId))
+      setSuccessMessage(`Deleted record ${recordId}`)
+      setSuccessOpen(true)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete record')
+      setErrorOpen(true)
+    }
+  }, [])
+
+  // Update new record fields
+  const handleRecordChange = useCallback((field: string, value: string) => {
+    setNewRecord((prev) => ({ ...prev, [field]: value }))
+  }, [])
+
+  // Memoize error notification callback
+  const handleCloseError = useCallback(() => {
+    setErrorOpen(false)
+    setError(null)
+  }, [])
 
   return (
     <Box p={2} sx={{ backgroundColor: 'darkgreen' }}>
       <Paper elevation={2} sx={{ backgroundColor: 'white' }}>
+        {/* Header */}
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="h6">Records</Typography>
           <Box>
@@ -99,6 +156,7 @@ export default function Dashboard() {
           </Box>
         </Toolbar>
 
+        {/* Content */}
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" p={4}>
             <CircularProgress />
@@ -108,132 +166,35 @@ export default function Dashboard() {
             <Typography color="error">{error}</Typography>
           </Box>
         ) : (
-          <Box sx={{ p: 2 }}>
-            <Grid container spacing={2}>
-              {displayed.map((record) => (
-                <Grid item xs={12} sm={6} md={4} key={record.id}>
-                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                        <Typography color="textSecondary" variant="body2">
-                          ID: {record.id}
-                        </Typography>
-                        {record.status && (
-                          <Chip label={record.status} size="small" variant="outlined" />
-                        )}
-                      </Box>
-                      <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                        {record.name}
-                      </Typography>
-                      {record.itemcontents && (
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="caption" color="textSecondary" display="block">
-                            Item Contents
-                          </Typography>
-                          <Typography variant="body2">{record.itemcontents}</Typography>
-                        </Box>
-                      )}
-                      {record.year_released && (
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="caption" color="textSecondary" display="block">
-                            Year Released
-                          </Typography>
-                          <Typography variant="body2">{record.year_released}</Typography>
-                        </Box>
-                      )}
-                      {record.description && (
-                        <Box>
-                          <Typography variant="caption" color="textSecondary" display="block">
-                            Description
-                          </Typography>
-                          <Typography variant="body2">{record.description}</Typography>
-                        </Box>
-                      )}
-                    </CardContent>
-                    {record.createdAt && (
-                      <CardActions>
-                        <Typography variant="caption" color="textSecondary">
-                          Created: {new Date(record.createdAt as string).toLocaleDateString()}
-                        </Typography>
-                      </CardActions>
-                    )}
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-
-            {displayed.length === 0 && (
-              <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                No records found
-              </Typography>
-            )}
-
-            {rows.length > rowsPerPage && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-                <Button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  variant="outlined"
-                  size="small"
-                >
-                  Previous
-                </Button>
-                <Typography sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
-                  Page {page + 1} of {Math.ceil(rows.length / rowsPerPage)}
-                </Typography>
-                <Button
-                  onClick={() => setPage((p) => Math.min(Math.ceil(rows.length / rowsPerPage) - 1, p + 1))}
-                  disabled={page >= Math.ceil(rows.length / rowsPerPage) - 1}
-                  variant="outlined"
-                  size="small"
-                >
-                  Next
-                </Button>
-              </Box>
-            )}
-          </Box>
+          <RecordGrid
+            records={rows}
+            images={images}
+            slideIndices={slideIndices}
+            onSlidePrevious={prevSlide}
+            onSlideNext={nextSlide}
+            onDelete={handleDelete}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={setPage}
+          />
         )}
 
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>New Record</DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'grid', gap: 2, mt: 1 }}>
-              <TextField
-                label="Name"
-                value={newRecord.name}
-                onChange={(e) => setNewRecord((s) => ({ ...s, name: e.target.value }))}
-                fullWidth
-              />
-              <TextField
-                label="Item Contents"
-                value={newRecord.itemcontents}
-                onChange={(e) => setNewRecord((s) => ({ ...s, itemcontents: e.target.value }))}
-                fullWidth
-              />
-              <TextField
-                label="Description"
-                value={newRecord.description}
-                onChange={(e) => setNewRecord((s) => ({ ...s, description: e.target.value }))}
-                fullWidth
-              />
-              <TextField
-                label="Year Released"
-                value={newRecord.year_released}
-                onChange={(e) => setNewRecord((s) => ({ ...s, year_released: e.target.value }))}
-                fullWidth
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} variant="contained" disabled={submitting}>
-              {submitting ? 'Saving...' : 'Create'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Snackbar open={successOpen} autoHideDuration={4000} onClose={() => setSuccessOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        {/* Dialogs and Notifications */}
+        <NewRecordDialog
+          open={dialogOpen}
+          submitting={submitting}
+          record={newRecord}
+          onClose={() => setDialogOpen(false)}
+          onCreate={handleCreate}
+          onRecordChange={handleRecordChange}
+        />
+
+        <Snackbar
+          open={successOpen}
+          autoHideDuration={4000}
+          onClose={() => setSuccessOpen(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
           <Alert onClose={() => setSuccessOpen(false)} severity="success" sx={{ width: '100%' }}>
             {successMessage}
           </Alert>
@@ -242,24 +203,15 @@ export default function Dashboard() {
         <Snackbar
           open={errorOpen}
           autoHideDuration={6000}
-          onClose={() => {
-            setErrorOpen(false)
-            setError(null)
-          }}
+          onClose={handleCloseError}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         >
-          <Alert
-            onClose={() => {
-              setErrorOpen(false)
-              setError(null)
-            }}
-            severity="error"
-            sx={{ width: '100%' }}
-          >
+          <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
             {error}
           </Alert>
         </Snackbar>
-      </Paper>
-    </Box>
-  )
-}
+          </Paper>
+        </Box>
+      )
+    }
+  
