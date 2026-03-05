@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { fetchAllRecords, createRecord } from '../api/api'
+import { fetchAllRecords, createRecord, deleteRecord } from '../api/api'
 import { RecordItem } from '../types'
 import {
   Box,
@@ -15,7 +15,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import RecordGrid from './RecordGrid'
 import NewRecordDialog from './NewRecordDialog'
 
-const IMAGES_URL = 'http://localhost:8080/collection/images'
+const IMAGES_URL = import.meta.env.VITE_IMAGES_URL
 
 export default function Dashboard() {
   // Data state
@@ -90,6 +90,25 @@ export default function Dashboard() {
     }
   }, [newRecord])
 
+  // Delete record
+  const handleDelete = useCallback(async (record: RecordItem) => {
+    try {
+      await deleteRecord(record)
+      var prev = [...rows]
+      console.log(prev.findIndex(r => r.id === record.id))
+      setRows(prev.splice(prev.findIndex(r => r.id === record.id), 1) && prev)
+      console.log(prev.flatMap(r => r.id))
+      setSuccessMessage(`Deleted record ${record.id}`)
+      setSuccessOpen(true)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete')
+      setErrorOpen(true)
+    }
+    finally {
+      setSubmitting(false)
+    }
+  }, [page, rowsPerPage])
+
   // Handle slide navigation
   const nextSlide = useCallback((recordId: number) => {
     setSlideIndices((prev) => ({
@@ -104,30 +123,6 @@ export default function Dashboard() {
       [recordId]: ((prev[recordId] || 0) - 1 + images.length) % images.length
     }))
   }, [images.length])
-
-  // Delete record
-  const handleDelete = useCallback(async (recordId: number) => {
-    try {
-      const response = await fetch(`https://localhost:8080/collection/cs`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: recordId })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete record')
-      }
-
-      setRows((prev) => prev.filter((r) => r.id !== recordId))
-      setSuccessMessage(`Deleted record ${recordId}`)
-      setSuccessOpen(true)
-    } catch (err: any) {
-      setError(err?.message || 'Failed to delete record')
-      setErrorOpen(true)
-    }
-  }, [])
 
   // Update new record fields
   const handleRecordChange = useCallback((field: string, value: string) => {

@@ -21,9 +21,10 @@ interface RecordCardProps {
   slideIndex: number
   onSlidePrevious: () => void
   onSlideNext: () => void
+  onDelete: (record: RecordItem) => void
 }
 
-export default function RecordCard({ record, images, slideIndex, onSlidePrevious, onSlideNext }: RecordCardProps) {
+export default function RecordCard({ record, images, slideIndex, onSlidePrevious, onSlideNext, onDelete }: RecordCardProps) {
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flexGrow: 1 }}>
@@ -92,9 +93,7 @@ export default function RecordCard({ record, images, slideIndex, onSlidePrevious
         </CardActions>
       )}
       <CardActions>
-                {/* <Button size="small" onClick={() => handleDisplayOpen(item)}>Details</Button> */}
-                {/* <Button size="small">Edit</Button> */}
-                <Button size="small" onClick= {() => alert("Delete clicked")}>Delete</Button>
+                <Button size="small" color="error" onClick={() => onDelete(record)}>Delete</Button>
             </CardActions>
     </Card>
   )

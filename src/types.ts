@@ -1,5 +1,5 @@
 export interface RecordItem {
-  id: string | number
+  id:  number
   name: string
   description: string
   year_released: string

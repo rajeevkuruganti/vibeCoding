@@ -9,6 +9,7 @@ interface RecordGridProps {
   slideIndices: { [key: number]: number }
   onSlidePrevious: (recordId: number) => void
   onSlideNext: (recordId: number) => void
+  onDelete: (record: RecordItem) => void
   page: number
   rowsPerPage: number
   onPageChange: (newPage: number) => void
@@ -20,6 +21,7 @@ export default function RecordGrid({
   slideIndices,
   onSlidePrevious,
   onSlideNext,
+  onDelete,
   page,
   rowsPerPage,
   onPageChange
@@ -38,6 +40,7 @@ export default function RecordGrid({
               slideIndex={slideIndices[record.id as unknown as number] || 0}
               onSlidePrevious={() => onSlidePrevious(record.id as unknown as number)}
               onSlideNext={() => onSlideNext(record.id as unknown as number)}
+              onDelete={onDelete}
             />
           </Grid>
         ))}
