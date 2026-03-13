@@ -94,10 +94,7 @@ export default function Dashboard() {
   const handleDelete = useCallback(async (record: RecordItem) => {
     try {
       await deleteRecord(record)
-      var prev = [...rows]
-      console.log(prev.findIndex(r => r.id === record.id))
-      setRows(prev.splice(prev.findIndex(r => r.id === record.id), 1) && prev)
-      console.log(prev.flatMap(r => r.id))
+      setRows((prev) => prev.filter(r => r.id !== record.id))
       setSuccessMessage(`Deleted record ${record.id}`)
       setSuccessOpen(true)
     } catch (err: any) {
@@ -107,7 +104,7 @@ export default function Dashboard() {
     finally {
       setSubmitting(false)
     }
-  }, [page, rowsPerPage])
+  }, [])
 
   // Handle slide navigation
   const nextSlide = useCallback((recordId: number) => {
