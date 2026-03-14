@@ -23,7 +23,8 @@ import {
   MenuItem
 } from '@mui/material'
 import { ExpandMore, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material'
-import { RecordItem } from '../types'
+import { RecordItem, UpdateRecordPayload, parseItemContents, convertBookRecordToJSON } from '../types'
+import { DESCRIPTION_MAX_LENGTH, FIELD_LABELS, CONDITION_OPTIONS, AUTOGRAPHED_OPTIONS } from '../constants'
 import Slideshow from './Slideshow'
 
 interface RecordCardProps {
@@ -267,12 +268,12 @@ export default function RecordCard({ record, images, slideIndex, onSlidePrevious
           <TextField
             label="Description (max 3000 characters)"
             value={editData.description || ''}
-            onChange={(e: any) => handleEditChange('description', e.target.value.slice(0, 3000))}
+            onChange={(e: any) => handleEditChange('description', e.target.value.slice(0, DESCRIPTION_MAX_LENGTH))}
             fullWidth
             multiline
             rows={4}
             size="small"
-            helperText={`${(editData.description || '').length}/3000`}
+            helperText={`${(editData.description || '').length}/${DESCRIPTION_MAX_LENGTH}`}
             InputLabelProps={{ sx: { fontWeight: 'bold', fontSize: '0.95rem' } }}
           />
         </DialogContent>

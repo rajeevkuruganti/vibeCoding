@@ -15,6 +15,7 @@ import {
   MenuItem,
   Typography
 } from '@mui/material'
+import { DESCRIPTION_MAX_LENGTH } from '../constants'
 
 interface NewRecordDialogProps {
   open: boolean
@@ -134,11 +135,11 @@ export default function NewRecordDialog({
             <TextField
               label="Description (max 3000 characters)"
               value={record.description || ''}
-              onChange={(e) => onRecordChange('description', e.target.value.slice(0, 3000))}
+              onChange={(e) => onRecordChange('description', e.target.value.slice(0, DESCRIPTION_MAX_LENGTH))}
               fullWidth
               multiline
               rows={4}
-              helperText={`${(record.description || '').length}/3000`}
+              helperText={`${(record.description || '').length}/${DESCRIPTION_MAX_LENGTH}`}
               InputLabelProps={{ sx: { fontWeight: 'bold', fontSize: '0.95rem' } }}
             />
           </Box>
