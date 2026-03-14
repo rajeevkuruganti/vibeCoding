@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { fetchAllRecords, createRecord, deleteRecord } from '../api/api'
-import { RecordItem } from '../types'
+import { RecordItem, convertBookRecordToJSON } from '../types'
 import {
   Box,
   CircularProgress,
@@ -17,6 +17,18 @@ import NewRecordDialog from './NewRecordDialog'
 
 const IMAGES_URL = import.meta.env.VITE_IMAGES_URL
 
+const INITIAL_RECORD = {
+  title: '',
+  author: '',
+  isbn: '',
+  edition: '',
+  autographed: 'No',
+  dateAcquired: '',
+  cost: '',
+  condition: 'Good',
+  description: ''
+}
+
 export default function Dashboard() {
   // Data state
   const [rows, setRows] = useState<RecordItem[]>([])
@@ -32,7 +44,7 @@ export default function Dashboard() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [newRecord, setNewRecord] = useState({ name: '', itemcontents: '', year_released: '', description: '' })
+  const [newRecord, setNewRecord] = useState(INITIAL_RECORD)
 
   // Notification state
   const [successOpen, setSuccessOpen] = useState(false)
@@ -75,11 +87,21 @@ export default function Dashboard() {
   const handleCreate = useCallback(async () => {
     setSubmitting(true)
     try {
-      const created = await createRecord(newRecord)
-      setRows((prev) => [created, ...prev])
+      // Convert book record to JSON and send as itemContents
+      const itemContentsJSON = convertBookRecordToJSON(newRecord)
+      console.log('Sending book record as JSON:', itemContentsJSON)
+      
+      const recordToCreate = {
+        ...newRecord,
+        name: newRecord.title,
+        itemcontents: itemContentsJSON
+      }
+      
+      const created = await createRecord(recordToCreate)
+      setRows((prev: RecordItem[]) => [created, ...prev])
       setPage(0)
       setDialogOpen(false)
-      setNewRecord({ name: '', itemcontents: '', year_released: '', description: '' })
+      setNewRecord(INITIAL_RECORD)
       setSuccessMessage(`Created record ${created.id}`)
       setSuccessOpen(true)
     } catch (err: any) {
@@ -90,11 +112,16 @@ export default function Dashboard() {
     }
   }, [newRecord])
 
+  // Clear form
+  const handleClear = useCallback(() => {
+    setNewRecord(INITIAL_RECORD)
+  }, [])
+
   // Delete record
   const handleDelete = useCallback(async (record: RecordItem) => {
     try {
       await deleteRecord(record)
-      setRows((prev) => prev.filter(r => r.id !== record.id))
+      setRows((prev: RecordItem[]) => prev.filter((r: RecordItem) => r.id !== record.id))
       setSuccessMessage(`Deleted record ${record.id}`)
       setSuccessOpen(true)
     } catch (err: any) {
@@ -108,14 +135,14 @@ export default function Dashboard() {
 
   // Handle slide navigation
   const nextSlide = useCallback((recordId: number) => {
-    setSlideIndices((prev) => ({
+    setSlideIndices((prev: any) => ({
       ...prev,
       [recordId]: ((prev[recordId] || 0) + 1) % images.length
     }))
   }, [images.length])
 
   const prevSlide = useCallback((recordId: number) => {
-    setSlideIndices((prev) => ({
+    setSlideIndices((prev: any) => ({
       ...prev,
       [recordId]: ((prev[recordId] || 0) - 1 + images.length) % images.length
     }))
@@ -123,7 +150,7 @@ export default function Dashboard() {
 
   // Update new record fields
   const handleRecordChange = useCallback((field: string, value: string) => {
-    setNewRecord((prev) => ({ ...prev, [field]: value }))
+    setNewRecord((prev: any) => ({ ...prev, [field]: value }))
   }, [])
 
   // Memoize error notification callback
@@ -179,6 +206,7 @@ export default function Dashboard() {
           onClose={() => setDialogOpen(false)}
           onCreate={handleCreate}
           onRecordChange={handleRecordChange}
+          onClear={handleClear}
         />
 
         <Snackbar
