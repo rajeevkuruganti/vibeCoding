@@ -59,7 +59,9 @@ export async function deleteRecord(id: number): Promise<void> {
 export async function updateRecord(id: number, payload: Partial<RecordItem>): Promise<RecordItem> {
   try {
     const url = `${BASE}${COLLECTION_ENDPOINT}/${id}`
-    const res = await axios.put<RecordItem>(url, payload)
+    console.log(`Rajeev are you here ---> Updating record ${id} with payload:`, payload)
+    const res = await axios.patch<RecordItem>(url, payload)
+    console.log( "Updated record: "+ JSON.stringify(res.data))
     return res.data
   } catch (error) {
     handleApiError(error)

@@ -23,6 +23,7 @@ import {
   MenuItem
 } from '@mui/material'
 import { ExpandMore, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material'
+import {updateRecord} from '../api/api'
 import { RecordItem, UpdateRecordPayload, parseItemContents, convertBookRecordToJSON } from '../types'
 import { DESCRIPTION_MAX_LENGTH, FIELD_LABELS, CONDITION_OPTIONS, AUTOGRAPHED_OPTIONS } from '../constants'
 import Slideshow from './Slideshow'
@@ -70,9 +71,14 @@ export default function RecordCard({ record, images, slideIndex, onSlidePrevious
     setEditData((prev: any) => ({ ...prev, [key]: value }))
   }
 
-  const handleEditSave = () => {
-    console.log('Updated item contents:', editData)
-    // Here you would call an API to update the record
+  const handleEditSave = async () => {
+    const { name, ...bookFields } = editData
+    const payload = {
+      name,
+      itemcontents: convertBookRecordToJSON(bookFields as any)
+    }
+    console.log('Updating record with payload, Rajeev : ', payload )
+    await updateRecord(record.id, payload)
     setEditOpen(false)
   }
 
