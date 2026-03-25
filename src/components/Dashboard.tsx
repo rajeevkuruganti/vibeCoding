@@ -116,6 +116,10 @@ export default function Dashboard() {
   const handleClear = useCallback(() => {
     setNewRecord(INITIAL_RECORD)
   }, [])
+  // Update record 
+const handleUpdate = useCallback((updated: RecordItem) => {
+  setRows(prev => prev.map(r => r.id === updated.id ? updated : r))
+}, [])
 
   // Delete record
   const handleDelete = useCallback(async (record: RecordItem) => {
@@ -192,6 +196,7 @@ export default function Dashboard() {
             onSlidePrevious={prevSlide}
             onSlideNext={nextSlide}
             onDelete={handleDelete}
+            onUpdate={handleUpdate}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={setPage}

@@ -34,10 +34,11 @@ interface RecordCardProps {
   slideIndex: number
   onSlidePrevious: () => void
   onSlideNext: () => void
+  onUpdate:(updated:RecordItem) => void
   onDelete: (record: RecordItem) => void
 }
 
-export default function RecordCard({ record, images, slideIndex, onSlidePrevious, onSlideNext, onDelete }: RecordCardProps) {
+export default function RecordCard({ record, images, slideIndex, onSlidePrevious, onSlideNext, onUpdate, onDelete }: RecordCardProps) {
   const [editOpen, setEditOpen] = useState(false)
   const [editData, setEditData] = useState<Record<string, string>>({})
 
@@ -78,7 +79,8 @@ export default function RecordCard({ record, images, slideIndex, onSlidePrevious
       itemcontents: convertBookRecordToJSON(bookFields as any)
     }
     console.log('Updating record with payload, Rajeev : ', payload )
-    await updateRecord(record.id, payload)
+    const updated = await updateRecord(record.id, payload)
+    onUpdate(updated)
     setEditOpen(false)
   }
 
